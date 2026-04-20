@@ -1,0 +1,315 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+html {
+  font-size: 110%;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: #525252;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap ul, .tiptap ol {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.tiptap ul:not([data-type="taskList"]) {
+  list-style-type: disc !important;
+}
+
+.tiptap ul:not([data-type="taskList"]) ul:not([data-type="taskList"]) {
+  list-style-type: circle !important;
+}
+
+.tiptap ul:not([data-type="taskList"]) ul:not([data-type="taskList"]) ul:not([data-type="taskList"]) {
+  list-style-type: square !important;
+}
+
+.tiptap ul:not([data-type="taskList"]) ul:not([data-type="taskList"]) ul:not([data-type="taskList"]) ul:not([data-type="taskList"]) {
+  list-style-type: disc !important;
+}
+
+.tiptap li {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.prose li::marker {
+  color: #e5e5e5 !important;
+}
+
+.tiptap li > p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.tiptap h1 {
+  font-size: 1.875rem !important; /* text-3xl */
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+  line-height: 1.2 !important;
+}
+
+.tiptap h2 {
+  font-size: 1.5rem !important; /* text-2xl */
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.75rem !important;
+  line-height: 1.3 !important;
+}
+
+.tiptap h3 {
+  font-size: 1.25rem !important; /* text-xl */
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.4 !important;
+}
+
+.tiptap blockquote,
+.prose blockquote {
+  border-left-width: 4px !important;
+  border-left-style: solid !important;
+  border-left-color: #FFFFFF !important;
+  padding-left: 1rem !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  color: inherit !important;
+  font-style: normal !important;
+  quotes: none !important;
+}
+
+.tiptap blockquote p,
+.prose blockquote p {
+  color: inherit !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.tiptap blockquote p::before,
+.tiptap blockquote p::after,
+.prose blockquote p::before,
+.prose blockquote p::after {
+  display: none !important;
+}
+
+.prose hr {
+  border-color: #2F2F2F !important;
+  margin-top: 2rem !important;
+  margin-bottom: 2rem !important;
+}
+
+ul[data-type="taskList"] {
+  list-style: none !important;
+  padding: 0 !important;
+}
+
+ul[data-type="taskList"] p {
+  margin: 0 !important;
+}
+
+ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+ul[data-type="taskList"] input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #a3a3a3;
+  border-radius: 3px;
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+  margin-top: 0.3rem;
+  transition: all 0.2s ease;
+}
+
+ul[data-type="taskList"] input[type="checkbox"]:checked {
+  background-color: #2EAADC;
+  border-color: #2EAADC;
+}
+
+ul[data-type="taskList"] input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid #FFFFFF;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: #737373 !important;
+}
+
+ul[data-type="taskList"] li[data-checked="true"] p {
+  color: #737373 !important;
+}
+
+.drag-handle {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: grab;
+  background-color: transparent;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.editor-wrapper:hover .drag-handle:not(.hide) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drag-handle.hide {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.drag-handle:hover {
+  background-color: #2F2F2F;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-handle::after {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 16px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16" fill="%23737373"><circle cx="3" cy="4" r="1.5"/><circle cx="7" cy="4" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/><circle cx="3" cy="12" r="1.5"/><circle cx="7" cy="12" r="1.5"/></svg>');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.tiptap a {
+  cursor: pointer !important;
+}
+
+/* Table Styles */
+.tiptap table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.tiptap table td,
+.tiptap table th {
+  min-width: 100px;
+  border: 1px solid #3f3f46; /* neutral-700 */
+  padding: 8px 12px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.tiptap table th {
+  font-weight: 600;
+  text-align: left;
+  background-color: #27272a; /* neutral-800 */
+}
+
+.tiptap table .column-resize-handle {
+  background-color: #60a5fa; /* blue-400 */
+  bottom: -2px;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  width: 4px;
+  cursor: col-resize;
+  z-index: 20;
+}
+
+.tiptap table p {
+  margin: 0 !important;
+}
+
+.tiptap div[data-type="column"] {
+  min-height: 1.5rem;
+  padding: 0.25rem 0;
+}
+
+.tiptap details > summary {
+  list-style: none;
+  position: relative;
+  display: block;
+  padding-left: 1.75rem !important; /* Increase from 1.5rem */
+  min-height: 1.5rem;
+}
+.tiptap details > summary::-webkit-details-marker {
+  display: none;
+}
+.tiptap details > summary::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.25em;
+  width: 1.25em;
+  height: 1.25em;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23737373" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>');
+  background-size: 14px;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: transform 0.2s ease-in-out;
+  user-select: none;
+}
+
+.tiptap details > summary[data-level="1"]::after {
+  left: -0.3em;
+}
+
+.tiptap details > summary[data-level="2"]::after {
+  left: -0.2em;
+}
+
+.tiptap details > summary[data-level="3"]::after {
+  left: -0.1em;
+}
+.tiptap details[open] > summary::after {
+  transform: rotate(90deg);
+}
+.tiptap details > *:not(summary) {
+  padding-left: 1.75rem; /* Matches the padding of summary */
+}
+
+.tiptap summary.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #525252;
+  pointer-events: none;
+  height: 0;
+}
+
+.tiptap details > p.is-empty:nth-child(2):last-child::before {
+  content: 'Empty toggle. Click or drop blocks inside.';
+  color: #737373;
+  float: left;
+  pointer-events: none;
+  height: 0;
+  font-size: 0.95em;
+}
+
+

@@ -1,0 +1,128 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required) - Firebase Auth UID
+    //   - email: string (required) - User's email address
+    //
+    // Collection: pages
+    // Document ID: {pageId} (auto-generated)
+    // Fields:
+    //   - id: string (required) - Firestore Document ID
+    //   - userId: string (required) - Reference to the user's UID
+    //   - title: string (required) - The title of the page
+    //   - content: map (required) - The complete Tiptap editor state
+    //   - parentId: string (optional) - Reference to another page ID
+    //   - createdAt: timestamp (required) - Date of creation
+    //   - updatedAt: timestamp (required) - Automatically updated on save
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasOnly(['uid', 'email']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.email is string && isValidEmail(data.email);
+    }
+
+    function isValidPage(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'content', 'createdAt', 'updatedAt']) &&
+             data.id is string &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 200 &&
+             data.content is string &&
+             (!('parentId' in data) || data.parentId == null || data.parentId is string) &&
+             (!('icon' in data) || data.icon == null || data.icon is string) &&
+             (!('isTrashed' in data) || data.isTrashed is bool) &&
+             (!('fullWidth' in data) || data.fullWidth is bool) &&
+             (!('isLocked' in data) || data.isLocked is bool) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidDatabase(data) {
+      return data.keys().hasAny(['id', 'pageId', 'userId', 'columns', 'rows', 'createdAt', 'updatedAt']) &&
+             data.id is string &&
+             data.pageId is string &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.columns is list &&
+             data.rows is list &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    request.resource.data.uid == resource.data.uid;
+      allow delete: if false; // Users shouldn't be deleted from client
+    }
+
+    match /pages/{pageId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                    request.resource.data.userId == request.auth.uid && 
+                    isValidPage(request.resource.data);
+      allow update: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid &&
+                    request.resource.data.userId == request.auth.uid &&
+                    isValidPage(request.resource.data) &&
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    request.resource.data.id == resource.data.id;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /databases/{databaseId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                    request.resource.data.userId == request.auth.uid && 
+                    isValidDatabase(request.resource.data);
+      allow update: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid &&
+                    request.resource.data.userId == request.auth.uid &&
+                    isValidDatabase(request.resource.data) &&
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    request.resource.data.id == resource.data.id;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

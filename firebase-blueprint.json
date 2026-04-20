@@ -1,0 +1,133 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's email address"
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "Page": {
+      "title": "Page",
+      "description": "A Notion-style page containing Tiptap editor content",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Firestore Document ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the user's UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the page"
+        },
+        "content": {
+          "type": "object",
+          "description": "The complete Tiptap editor state (JSON)"
+        },
+        "parentId": {
+          "type": ["string", "null"],
+          "description": "Reference to another page ID for nested hierarchy"
+        },
+        "icon": {
+          "type": ["string", "null"],
+          "description": "Emoji icon for the page"
+        },
+        "isTrashed": {
+          "type": "boolean",
+          "description": "Whether the page is in the trash"
+        },
+        "fullWidth": {
+          "type": "boolean",
+          "description": "Whether the page should take up the full width of the screen"
+        },
+        "isLocked": {
+          "type": "boolean",
+          "description": "Whether the page is locked from editing"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Automatically updated on save"
+        }
+      },
+      "required": ["id", "userId", "title", "content", "createdAt", "updatedAt"]
+    },
+    "Database": {
+      "title": "Database",
+      "description": "A collection of structured data rows and columns",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Firestore Document ID"
+        },
+        "pageId": {
+          "type": "string",
+          "description": "Reference to the page containing this database"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the user's UID"
+        },
+        "columns": {
+          "type": "array",
+          "description": "Array of column definitions"
+        },
+        "rows": {
+          "type": "array",
+          "description": "Array of row data"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Automatically updated on save"
+        }
+      },
+      "required": ["id", "pageId", "userId", "columns", "rows", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user profiles"
+    },
+    "/pages/{pageId}": {
+      "schema": {
+        "$ref": "#/entities/Page"
+      },
+      "description": "Stores user pages/notes"
+    },
+    "/databases/{databaseId}": {
+      "schema": {
+        "$ref": "#/entities/Database"
+      },
+      "description": "Stores database schemas and rows"
+    }
+  }
+}

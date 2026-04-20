@@ -1,0 +1,5 @@
+{
+  "name": "FlowNote",
+  "description": "A fluid, block-based note-taking application.",
+  "requestFramePermissions": []
+}
