@@ -122,7 +122,7 @@ export default function PageView() {
           pageId={page.id} 
           initialTitle={page.title} 
           initialContent={typeof page.content === 'string' ? JSON.parse(page.content) : page.content} 
-          initialIcon={page.icon}
+          initialIcon={page.icon || undefined}
           isLocked={page.isLocked}
           hasCover={!!page.coverImage}
           onAddCover={handleAddCover}
