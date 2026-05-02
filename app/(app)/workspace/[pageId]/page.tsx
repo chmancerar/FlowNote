@@ -11,6 +11,9 @@ import Breadcrumbs from '@/components/editor/Breadcrumbs';
 import PageMenu from '@/components/editor/PageMenu';
 import PageCover from '@/components/editor/PageCover';
 import { updateDoc } from 'firebase/firestore';
+import { useEditorStore } from '@/lib/store';
+
+import { Page } from '@/types';
 
 const TiptapEditor = dynamic(() => import('@/components/editor/TiptapEditor'), {
   ssr: false,
@@ -24,10 +27,35 @@ const TiptapEditor = dynamic(() => import('@/components/editor/TiptapEditor'), {
 export default function PageView() {
   const { pageId } = useParams() as { pageId: string };
   const { user } = useAuth();
-  const [page, setPage] = useState<any>(null);
+  const [page, setPage] = useState<Page | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
+  const { isTyping, setIsTyping } = useEditorStore();
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const handleMouseMove = () => {
+      if (isTyping) {
+        setIsTyping(false);
+      }
+    };
+    
+    // Throttle the mouse move evaluation to every 200ms
+    const throttledMouseMove = () => {
+      if (!timeout) {
+        timeout = setTimeout(() => {
+          handleMouseMove();
+          timeout = undefined as any;
+        }, 200);
+      }
+    };
+
+    window.addEventListener('mousemove', throttledMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', throttledMouseMove);
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [isTyping, setIsTyping]);
 
   useEffect(() => {
     if (!user || !pageId) return;
@@ -83,15 +111,10 @@ export default function PageView() {
   }
 
   return (
-    <div 
-      className="flex-1 overflow-y-auto relative"
-      onMouseMove={() => {
-        if (isTyping) setIsTyping(false);
-      }}
-    >
+    <div className="flex-1 overflow-y-auto relative">
       <PageCover pageId={page.id} coverImage={page.coverImage} />
-      <Breadcrumbs pageId={page.id} isTyping={isTyping} />
-      <PageMenu page={page} isTyping={isTyping} />
+      <Breadcrumbs pageId={page.id} />
+      <PageMenu page={page} />
       <div className={`mx-auto px-8 py-12 transition-all duration-300 ${page.fullWidth ? 'max-w-none w-full px-12' : 'max-w-screen-md'}`}>
         <TiptapEditor 
           key={page.id}
@@ -101,7 +124,6 @@ export default function PageView() {
           initialIcon={page.icon}
           isLocked={page.isLocked}
           hasCover={!!page.coverImage}
-          onTypingChange={setIsTyping}
           onAddCover={handleAddCover}
         />
       </div>

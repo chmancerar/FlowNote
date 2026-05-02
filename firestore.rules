@@ -68,6 +68,7 @@ service cloud.firestore {
              (!('parentId' in data) || data.parentId == null || data.parentId is string) &&
              (!('icon' in data) || data.icon == null || data.icon is string) &&
              (!('isTrashed' in data) || data.isTrashed is bool) &&
+             (!('isFavorite' in data) || data.isFavorite is bool) &&
              (!('fullWidth' in data) || data.fullWidth is bool) &&
              (!('isLocked' in data) || data.isLocked is bool) &&
              data.createdAt is timestamp &&

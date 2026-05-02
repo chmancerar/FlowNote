@@ -2,7 +2,7 @@
 
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/animations/shift-away.css';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, JSONContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import { Extension } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -38,6 +38,10 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Popover from '@radix-ui/react-popover';
 import { IconPicker } from '@/components/IconPicker';
 import { RenderIcon } from '@/components/RenderIcon';
+import { useLinkHover } from './hooks/useLinkHover';
+
+import { useAutosave } from './hooks/useAutosave';
+import { VideoEmbedDialog } from './VideoEmbedDialog';
 
 const TEXT_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4',
@@ -83,7 +87,7 @@ const BlockStyles = Extension.create({
 interface TiptapEditorProps {
   pageId: string;
   initialTitle: string;
-  initialContent: any;
+  initialContent: JSONContent;
   initialIcon?: string;
   isLocked?: boolean;
   hasCover?: boolean;
@@ -95,20 +99,17 @@ export default function TiptapEditor({ pageId, initialTitle, initialContent, ini
   const { user } = useAuth();
   const [title, setTitle] = useState(initialTitle);
   const [icon, setIcon] = useState(initialIcon);
-  const [isSaving, setIsSaving] = useState(false);
+  const { triggerSave, isSaving } = useAutosave(pageId);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [blockMenu, setBlockMenu] = useState<{ x: number; y: number; isTable: boolean } | null>(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
-  const [hoveredLink, setHoveredLink] = useState<{ href: string, element: HTMLElement, text: string, rect: DOMRect } | null>(null);
-  const [isEditingLink, setIsEditingLink] = useState(false);
+  const { hoveredLink, setHoveredLink, isEditingLink, setIsEditingLink } = useLinkHover();
   const [editLinkUrl, setEditLinkUrl] = useState('');
   const [editLinkText, setEditLinkText] = useState('');
   const [showVideoInput, setShowVideoInput] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
   const [videoPos, setVideoPos] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleVideoDialog = (e: any) => {
@@ -125,50 +126,6 @@ export default function TiptapEditor({ pageId, initialTitle, initialContent, ini
     }
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      
-      // Only trigger for links inside the editor content
-      const isInsideEditor = target.closest('.ProseMirror');
-      const linkElement = isInsideEditor ? target.closest('a') : null;
-      
-      const popoverElement = document.getElementById('link-hover-popover');
-      if (popoverElement && popoverElement.contains(target)) {
-        return; // Keep it open if hovering over the popover
-      }
-
-      if (linkElement) {
-        setHoveredLink(prev => {
-          if (prev?.element === linkElement) return prev;
-          return {
-            href: linkElement.getAttribute('href') || '',
-            element: linkElement,
-            text: linkElement.innerText,
-            rect: linkElement.getBoundingClientRect()
-          };
-        });
-      } else {
-        setTimeout(() => {
-          const currentHover = document.querySelectorAll(':hover');
-          let isHoveringPopover = false;
-          currentHover.forEach(el => {
-            if (el.id === 'link-hover-popover') isHoveringPopover = true;
-          });
-          if (!isHoveringPopover) {
-            setHoveredLink(null);
-            setIsEditingLink(false);
-          }
-        }, 100);
-      }
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, []);
-  
   const editor = useEditor({
     extensions: [
       BlockStyles,
@@ -347,48 +304,6 @@ export default function TiptapEditor({ pageId, initialTitle, initialContent, ini
     if (block && editor) {
       editor.chain().focus().insertContentAt(block.to, block.node.toJSON()).run();
     }
-  };
-
-  const triggerSave = (newTitle: string, newContent: any) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    setIsSaving(true);
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        const pageRef = doc(db, 'pages', pageId);
-        
-        // Firestore doesn't accept undefined values, so we recursively strip them out
-        const removeUndefined = (obj: any): any => {
-          if (obj === null || obj === undefined) return null;
-          if (Array.isArray(obj)) return obj.map(removeUndefined);
-          if (typeof obj === 'object') {
-            const newObj: any = {};
-            for (const key in obj) {
-              if (obj[key] !== undefined) {
-                newObj[key] = removeUndefined(obj[key]);
-              }
-            }
-            return newObj;
-          }
-          return obj;
-        };
-
-        const cleanContent = removeUndefined(newContent);
-        const stringifiedContent = JSON.stringify(cleanContent);
-
-        await updateDoc(pageRef, {
-          title: newTitle,
-          content: stringifiedContent,
-          updatedAt: serverTimestamp(),
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `pages/${pageId}`);
-      } finally {
-        setIsSaving(false);
-      }
-    }, 1000); // 1 second debounce
   };
 
   useEffect(() => {
@@ -617,57 +532,12 @@ export default function TiptapEditor({ pageId, initialTitle, initialContent, ini
         )}
         <EditorContent editor={editor} />
         
-        {showVideoInput && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-neutral-800 p-5 rounded-xl shadow-2xl border border-neutral-700 w-[26rem] flex flex-col gap-4 animate-in zoom-in-95 fade-in duration-200">
-              <div>
-                <h3 className="text-white font-medium text-lg">Embed Video</h3>
-                <p className="text-neutral-400 text-sm">Paste a YouTube link below to embed it into your page.</p>
-              </div>
-              <input
-                type="url"
-                placeholder="https://youtube.com/watch?v=..."
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-md px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-neutral-600"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    if (videoUrl && editor) {
-                      editor.chain().focus().setTextSelection(videoPos || editor.state.selection.from).setYoutubeVideo({ src: videoUrl }).run();
-                    }
-                    setShowVideoInput(false);
-                    setVideoUrl('');
-                  } else if (e.key === 'Escape') {
-                    setShowVideoInput(false);
-                    setVideoUrl('');
-                  }
-                }}
-              />
-              <div className="flex justify-end gap-2 pt-2">
-                <button 
-                  onClick={() => setShowVideoInput(false)} 
-                  className="px-4 py-2 text-sm font-medium text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-md transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={() => {
-                    if (videoUrl && editor) {
-                      editor.chain().focus().setTextSelection(videoPos || editor.state.selection.from).setYoutubeVideo({ src: videoUrl }).run();
-                    }
-                    setShowVideoInput(false);
-                    setVideoUrl('');
-                  }}
-                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium transition-colors disabled:opacity-50"
-                  disabled={!videoUrl}
-                >
-                  Embed Video
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <VideoEmbedDialog 
+          open={showVideoInput}
+          onOpenChange={setShowVideoInput}
+          videoPos={videoPos}
+          editor={editor}
+        />
         
         {hoveredLink && (
           <EditorLinkPopover

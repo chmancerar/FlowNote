@@ -2,21 +2,24 @@
 
 import { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
-import { useSidebarStore } from '@/lib/store';
+import { useSidebarStore, useEditorStore } from '@/lib/store';
 import Link from 'next/link';
 import { ChevronRight, FileText } from 'lucide-react';
+import { RenderIcon } from '@/components/RenderIcon';
 
 interface Page {
   id: string;
   title: string;
   parentId: string | null;
+  icon?: string;
 }
 
-export default function Breadcrumbs({ pageId, isTyping }: { pageId: string, isTyping: boolean }) {
+export default function Breadcrumbs({ pageId }: { pageId: string }) {
   const { user } = useAuth();
   const { isOpen } = useSidebarStore();
+  const { isTyping } = useEditorStore();
   const [pages, setPages] = useState<Page[]>([]);
 
   useEffect(() => {
@@ -32,8 +35,11 @@ export default function Breadcrumbs({ pageId, isTyping }: { pageId: string, isTy
         id: doc.id,
         title: doc.data().title,
         parentId: doc.data().parentId,
+        icon: doc.data().icon,
       })) as Page[];
       setPages(fetchedPages);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'pages');
     });
 
     return () => unsubscribe();
@@ -66,7 +72,11 @@ export default function Breadcrumbs({ pageId, isTyping }: { pageId: string, isTy
             href={`/workspace/${page.id}`}
             className="flex items-center gap-1.5 hover:text-white hover:bg-neutral-800 px-2 py-1 rounded-md transition-colors"
           >
-            <FileText className="w-3.5 h-3.5" />
+            {page.icon ? (
+              <RenderIcon icon={page.icon} className="w-3.5 h-3.5 opacity-80" />
+            ) : (
+              <FileText className="w-3.5 h-3.5" />
+            )}
             <span className="max-w-[120px] truncate">{page.title || 'Untitled'}</span>
           </Link>
         </div>

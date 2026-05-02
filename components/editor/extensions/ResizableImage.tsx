@@ -31,6 +31,7 @@ const ResizableImageNode = (props: any) => {
 
   return (
     <NodeViewWrapper className={`relative inline-block leading-none ${selected || isResizing ? 'ring-2 ring-blue-500 rounded-md' : ''}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img 
         ref={imgRef}
         src={node.attrs.src} 

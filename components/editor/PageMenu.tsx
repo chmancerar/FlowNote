@@ -8,6 +8,7 @@ import * as Switch from '@radix-ui/react-switch';
 import { doc, updateDoc, collection, query, where, getDocs, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
+import { useEditorStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { RenderIcon } from '@/components/RenderIcon';
@@ -23,8 +24,9 @@ interface Page {
   coverImage?: string | null;
 }
 
-export default function PageMenu({ page, isTyping }: { page: Page, isTyping?: boolean }) {
+export default function PageMenu({ page }: { page: Page }) {
   const { user } = useAuth();
+  const { isTyping } = useEditorStore();
   const router = useRouter();
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [isTrashDialogOpen, setIsTrashDialogOpen] = useState(false);
