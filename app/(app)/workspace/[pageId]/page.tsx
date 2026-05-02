@@ -86,6 +86,7 @@ export default function PageView() {
   }, [page?.title]);
 
   const handleAddCover = async () => {
+    if (!page) return;
     const defaultCover = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2000&auto=format&fit=crop';
     try {
       await updateDoc(doc(db, 'pages', page.id), { coverImage: defaultCover });
