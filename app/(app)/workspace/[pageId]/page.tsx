@@ -63,7 +63,7 @@ export default function PageView() {
     const pageRef = doc(db, 'pages', pageId);
     const unsubscribe = onSnapshot(pageRef, (docSnap) => {
       if (docSnap.exists()) {
-        setPage({ id: docSnap.id, ...docSnap.data() });
+        setPage({ id: docSnap.id, ...docSnap.data() } as Page);
       } else {
         setError('Page not found');
       }
